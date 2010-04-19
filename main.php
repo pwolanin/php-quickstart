@@ -27,7 +27,6 @@ $instance->setLocation($endpoint);
 $name = "Test" . time();
 $id = createActiveAccount($instance, $name);
 print "\nAccount Created: " . $id;
-
 # QUERY ACCOUNT
 $query = "SELECT Id, AccountNumber, Name FROM Account WHERE name = '".$name."'";
 $records = queryAll($instance, $query);
@@ -192,7 +191,8 @@ function queryAll($instance, $query){
     } else {
 
         $locator = $result->result->queryLocator;
-        array_splice($records, count($records), 0, $recordsArray);
+        $newRecords = $result->result->records;
+        $recordsArray = array_merge($recordsArray, $newRecords);
 
         while (!$done && $locator && $moreCount == 0){
         
@@ -204,7 +204,15 @@ function queryAll($instance, $query){
             $done = $result->result->done;
             $size = $result->result->size;
             $locator = $result->result->queryLocator;
-            push($recordsArray, $result->result->records);
+            print "\nqueryMore";
+
+            $newRecords = $result->result->records;
+            $count = count($newRecords);
+            if ($count == 1){
+                array_push($recordsArray, $newRecords);
+            } else {
+                $recordsArray = array_merge($recordsArray, $newRecords);
+            }
     
         }
     }

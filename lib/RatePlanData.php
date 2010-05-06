@@ -31,6 +31,7 @@ class Zuora_RatePlanData extends Zuora_Object
     
     public function getSoapVar()
     {
+        $ratePlanChargeObjects = array();
         foreach ($this->_ratePlanChargeObjects as $object) {
             $ratePlanChargeObjects[] = $object->getSoapVar();
         }

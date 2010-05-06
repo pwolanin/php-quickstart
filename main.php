@@ -13,7 +13,8 @@ $config->wsdl = 'zuora.17.0.wsdl';
 $username = '<your username>';
 $password = '<your password>';
 $endpoint = 'https://www.zuora.com/apps/services/a/17.0';
-$accountingCode = "TestNewComponent";
+#$accountingCode = "TestNewComponent";
+$productName = '<your test product name>';// to keep things simple ,you'd better create a product with flat-fee of one-time charge for testing.
 
 $instance = Zuora_API::getInstance($config);
 $instance->setQueryOptions(100);
@@ -23,78 +24,167 @@ $instance->setLocation($endpoint);
 $instance->login($username, $password);
 $instance->setLocation($endpoint);
 
+# GET PRODUCT RATEPLAN FOR SUBSCRIBE
+$ProductRatePlan  = getProductRatePlan($instance,$productName);
+print "\nProductRatePlan Queried (ProductName=$productName): " . $ProductRatePlan->Id;
+
+#---------------------------------------------------------------------------------------
+print "\n-----------------------------------------1-------------------------------------";
+#---------------------------------------------------------------------------------------
 # CREATE AN ACTIVE ACCOUNT
-$name = "Test" . time();
-$id = createActiveAccount($instance, $name);
-print "\nAccount Created: " . $id;
+$name = "Testabc" . time();
+$newAccountId = createActiveAccount($instance, $name);
+print "\nAccount Created: " . $newAccountId;
 # QUERY ACCOUNT
 $query = "SELECT Id, AccountNumber, Name FROM Account WHERE name = '".$name."'";
 $records = queryAll($instance, $query);
 print "\nAccount Queried ($query): " . $records[0]->AccountNumber;
 
-#CREATE some usage
-//the minimum required fields
-$usage = array("AccountId" => $id,"Quantity" => 1234/1000,"StartDateTime" => '2010-04-08T12:22:22',"UOM" => '1KUSD');
-$result = upload_usage($instance,array($usage));
-print "\nUsage Created: " . $result->result->Id;
-
-# DELETE ACCOUNT
-$result = $instance->delete('Account', array($id));
-$success = $result->result->success;
-$msg = ($success ? "Success" : $result->result->errors->Code . " (" . $result->result->errors->Message.")");
-print "\nAccount Deleted: " . $msg;
-
-# GET PRODUCT IDs FOR SUBSCRIBE
-$ProductRatePlanCharge = getChargeByAccountingCode($instance, $accountingCode);
-print "\nProductRatePlanCharge Queried (AccountingCode=$accountingCode): " . $ProductRatePlanCharge->Id;
-
+//# DELETE ACCOUNT
+//$result = $instance->delete('Account', array($newAccountId));
+//$success = $result->result->success;
+//$msg = ($success ? "Success" : $result->result->errors->Code . " (" . $result->result->errors->Message.")");
+//print "\nAccount Deleted: " . $msg;
+#---------------------------------------------------------------------------------------
+print "\n-----------------------------------------2-------------------------------------";
+#---------------------------------------------------------------------------------------
 # SUBSCRIBE WILL CREATE ACCOUNT
-$result = subscribe($instance, $ProductRatePlanCharge);
+# Invoice & Payment
+
+$result = subscribe($instance, $ProductRatePlan);
 $success = $result->result->Success;
-$msg = ($success ? $result->result->AccountNumber : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
-print "\nSubscribe and Invoice&Payment:(AccountNumber) " . $msg;
+$msg = ($success ? $result->result->AccountNumber . ',' . $result->result->SubscriptionNumber : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
+print "\nSubscribe and Invoice&Payment:(AccountNumber & SubscriptionNumber) " . $msg;
 
 if($success){
-  $accountId = $result->result->AccountId;
-
-  # SUBSCRIBE WITH EXISTING WILL CREATE SUBSCRIPTION ON EXISTING ACCOUNT
-  $result = subscribeWithExistingAccount($instance, $ProductRatePlanCharge, $accountId);
-  print "\nSubscribe with existing account:";
-  $success = $result->result->Success;
-	$msg = ($success ? "\nSubscription created\n\tAccount: ".$result->result->AccountId."\n\tSubscriptionNumber: ".$result->result->SubscriptionNumber : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
-	print $msg;
+	$subscriptionId = $result -> result -> SubscriptionId;
+	# QUERY Subscription
+	$query = "SELECT Id, Name FROM Subscription WHERE Id = '".$subscriptionId."'";
+	$records = queryAll($instance, $query);
+	print "\nSubscription Queried ($query): " . $records[0]->Name;
 }
 
-# GENERATE & QUERY & POST INVOICE
-print "\nGenerating Invoice...";
-$result = subscribe($instance, $ProductRatePlanCharge,false);
+#---------------------------------------------------------------------------------------
+print "\n-----------------------------------------3-------------------------------------";
+#---------------------------------------------------------------------------------------
+
+# SUBSCRIBE WITH EXISTING WILL CREATE SUBSCRIPTION ON EXISTING ACCOUNT
+# NO Payment
+
+$result = subscribeWithExistingAccount($instance, $ProductRatePlan, $newAccountId,false);
 $success = $result->result->Success;
-$accountId = ($success ? $result->result->AccountId : "");
-if($accountId){	
-	$invoiceDate = date('Y-m-d\TH:i:s');
-	$targetDate = date('Y-m-d\TH:i:s', strtotime('+2 month', strtotime($invoiceDate)));
-	$result = generateInvoice($instance,$accountId,$invoiceDate,$targetDate);
-	$success = $result->result->Success;
-	$msg = ($success ? $result->result->Id : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
-	print "\nInvoice Created: " . $msg . "\n";
-	
-	if($success){
-	  # QUERY Invoice
-	  $query = "SELECT Id, InvoiceNumber,Status FROM Invoice WHERE id = '".$result->result->Id."'";
-	  $records = queryAll($instance, $query);
-	  print "\nInvoice Queried ($query): " . $records[0]->InvoiceNumber ." ". $records[0]->Status . "\n";
-	  
-	  # POST Invoice
-	  $result = postInvoice($instance,$result->result->Id);
-	  $success = $result->result->Success;
-	  print "\nInvoice Posted :" .($result->result->Success ? "Success" : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")"); 
-  
-    if($success){
- 		# DO PAYMENT
-    	createAndApplyPayment($instance,$accountId);
-    }    
-	}
+$msg = ($success ? $result->result->AccountNumber . ',' . $result->result->SubscriptionNumber : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
+print "\nSubscribe with existing account and Invoice:(AccountNumber & SubscriptionNumber) " . $msg;
+
+if($success){
+	$subscriptionId = $result -> result -> SubscriptionId;
+	# QUERY Subscription
+	$query = "SELECT Id, Name FROM Subscription WHERE Id = '".$subscriptionId."'";
+	$records = queryAll($instance, $query);
+	print "\nSubscription Queried ($query): " . $records[0]->Name;
 }
+
+#---------------------------------------------------------------------------------------
+print "\n-----------------------------------------4-------------------------------------";
+#---------------------------------------------------------------------------------------
+
+# SUBSCRIBE WITH EXISTING WILL CREATE SUBSCRIPTION ON EXISTING ACCOUNT
+$result = subscribeWithExistingAccount($instance, $ProductRatePlan, $newAccountId);
+$success = $result->result->Success;
+$msg = ($success ? $result->result->AccountNumber . ',' . $result->result->SubscriptionNumber : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
+print "\nSubscribe with existing account and Invoice&Payment:(AccountNumber & SubscriptionNumber) " . $msg;
+
+if($success){
+	$subscriptionId = $result -> result -> SubscriptionId;
+	# QUERY Subscription
+	$query = "SELECT Id, Name FROM Subscription WHERE Id = '".$subscriptionId."'";
+	$records = queryAll($instance, $query);
+	print "\nSubscription Queried ($query): " . $records[0]->Name;
+}
+#---------------------------------------------------------------------------------------
+print "\n-----------------------------------------5-------------------------------------";
+#---------------------------------------------------------------------------------------
+
+$result = subscribe($instance, $ProductRatePlan);
+$success = $result->result->Success;
+$msg = ($success ? $result->result->SubscriptionNumber : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
+print "\nSubscribe for Amendment:(SubscriptionNumber) " . $msg;
+
+$subscriptionId = $result -> result -> SubscriptionId;
+
+$result = newProductAmendment($instance,$productName,$subscriptionId);
+$success = $result->result->Success;
+$msg = ($success ? $result->result->Id : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
+print "\nnew Product Amendment: " . $msg;
+
+$query = "SELECT Id, Name , Version FROM Subscription WHERE PreviousSubscriptionId = '".$subscriptionId."'";
+$records = queryAll($instance, $query);
+
+$newSubscriptionId=$records[0]->Id;
+
+print "\nSubscription After new Product Amendment(Id,Name,Version):". $records[0]->Id . ',' .$records[0]->Name . ','. $records[0]->Version;
+
+$query = "select Id from RatePlan where SubscriptionId='" . $records[0]->Id . "'";
+$records = queryAll($instance, $query);
+
+$result = removeProductAmendment($instance,$records[0]->Id,$newSubscriptionId);
+$success = $result->result->Success;
+$msg = ($success ? $result->result->Id : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
+print "\nremove Product Amendment: " . $msg;
+
+$query = "SELECT Id, Name , Version FROM Subscription WHERE PreviousSubscriptionId = '".$newSubscriptionId."'";
+$records = queryAll($instance, $query);
+
+print "\nSubscription After remove Product Amendment(Id,Name,Version):". $records[0]->Id . ',' .$records[0]->Name . ','. $records[0]->Version;
+
+#---------------------------------------------------------------------------------------
+print "\n-----------------------------------------6-------------------------------------";
+#---------------------------------------------------------------------------------------
+
+$result = subscribe($instance, $ProductRatePlan);
+$success = $result->result->Success;
+$msg = ($success ? $result->result->SubscriptionNumber : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
+print "\nSubscribe for Cancel Amendment:(SubscriptionNumber) " . $msg;
+
+$subscriptionId = $result -> result -> SubscriptionId;
+$result = cancelSubscriptionAmendment($instance,$subscriptionId);
+$success = $result->result->Success;
+$msg = ($success ? $result->result->Id : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
+print "\nCancel Subscription Amendment: " . $msg;
+
+#---------------------------------------------------------------------------------------
+print "\n-----------------------------------------7-------------------------------------";
+#---------------------------------------------------------------------------------------
+
+$result = subscribe($instance, $ProductRatePlan,false);
+$success = $result->result->Success;
+$msg = ($success ? $result->result->SubscriptionNumber : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
+print "\nSubscribe no Payment:(SubscriptionNumber) " . $msg;
+
+$accountId = $result -> result -> AccountId;
+
+createAndApplyPayment($instance,$accountId);
+
+#---------------------------------------------------------------------------------------
+print "\n-----------------------------------------8-------------------------------------";
+#---------------------------------------------------------------------------------------
+
+#---------------------------------------------------------------------------------------
+print "\n-----------------------------------------9-------------------------------------";
+#---------------------------------------------------------------------------------------
+#UPLOAD some usage
+//the minimum required fields
+$usage = array("AccountId" => $newAccountId,"Quantity" => 5,"StartDateTime" => '2010-04-08T12:22:22',"UOM" => 'Each');
+$result = uploadUsages($instance,array($usage));
+print "\nUsage Created: " . $result->result->Id;
+
+#---------------------------------------------------------------------------------------
+print "\n----------------------------------------10-------------------------------------";
+#---------------------------------------------------------------------------------------
+$query = "SELECT Id, Name FROM Account";
+$records = queryAll($instance, $query);
+
+print "\nAll Account count:". count($records);
 
 # useful for debugging responses
 # Zuora_Debug::dump($result);
@@ -123,6 +213,7 @@ function createActiveAccount($instance, $name){
     $zAccount->PurchaseOrderNumber = 'PO-1223471249003';
     $zAccount->Status = 'Draft';
 
+
     $result = $instance->create(array($zAccount));
     $accountId = $result->result->Id;
 
@@ -147,14 +238,15 @@ function createActiveAccount($instance, $name){
     $zPaymentMethod->CreditCardCity = 'Anaheim';
     $zPaymentMethod->CreditCardCountry = 'United States';
     $zPaymentMethod->CreditCardExpirationMonth = '12';
-    $zPaymentMethod->CreditCardExpirationYear = '2010';
+    $zPaymentMethod->CreditCardExpirationYear = '2012';
     $zPaymentMethod->CreditCardHolderName = 'Firstly Lastly';
     $zPaymentMethod->CreditCardNumber = '4111111111111111';
     $zPaymentMethod->CreditCardPostalCode = '22042';
     $zPaymentMethod->CreditCardState = 'California';
     $zPaymentMethod->CreditCardType = 'Visa';
     $zPaymentMethod->Type = 'CreditCard';
-    $result = $instance->create(array($zPaymentMethod));
+     
+    $result = $instance->create(array($zPaymentMethod));    
     $paymentMethodId = $result->result->Id;
 
     # Update Account w/ Bill To/Sold To; also specify as active
@@ -163,6 +255,7 @@ function createActiveAccount($instance, $name){
     $zAccount->Status = 'Active';
     $zAccount->BillToId = $contactId;
     $zAccount->SoldToId = $contactId;
+    $zAccount->DefaultPaymentMethodId = $paymentMethodId;
     $result = $instance->update(array($zAccount));
 
     return $accountId;
@@ -237,14 +330,10 @@ function getChargeByAccountingCode($instance, $accountingCode){
     return $ProductRatePlanCharge;
 
 }
+function subscribe($instance, $ProductRatePlan,$GeneratePayments=true,$GenerateInvoice=true,$accountName=null, $subscriptionName=null){
 
-# make subscribe call
-function subscribe($instance, $ProductRatePlanCharge,$GenerateInvoiceAndPayments=true,$accountName=null, $subscriptionName=null){
-
-
-    $ProductRatePlanChargeId = $ProductRatePlanCharge->Id;
-    $ProductRatePlanId = $ProductRatePlanCharge->ProductRatePlanId;
-
+    $ProductRatePlanId = $ProductRatePlan->Id;
+    
     # print "\nPRODUCT RATE PLAN ID: $ProductRatePlanId";
     # print "\nPRODUCT RATE PLAN CHARGE ID: $ProductRatePlanChargeId";
 
@@ -277,7 +366,7 @@ function subscribe($instance, $ProductRatePlanCharge,$GenerateInvoiceAndPayments
     $zPaymentMethod->CreditCardPostalCode = '22042';
     $zPaymentMethod->CreditCardState = 'California';
     $zPaymentMethod->CreditCardType = 'Visa';
-    $zPaymentMethod->Type = 'Credit Card';
+    $zPaymentMethod->Type = 'CreditCard';
 
     $zBillToContact = new Zuora_Contact();
     $zBillToContact->Address1 = '4901 Morena Blvd';
@@ -290,7 +379,7 @@ function subscribe($instance, $ProductRatePlanCharge,$GenerateInvoiceAndPayments
     $zBillToContact->State = 'Virginia';
     $zBillToContact->WorkEmail = 'robert@smith.com';
 
-    $date = date('Y-m-d\TH:i:s');
+    $date = date('Y-m-d\TH:i:s',mktime(0, 0, 0, date("m")-1  , date("d"), date("Y")));
     $zSubscription = new Zuora_Subscription();
     if (isset($subscriptionName)){
         $zSubscription->Name = $subscriptionName;
@@ -314,32 +403,29 @@ function subscribe($instance, $ProductRatePlanCharge,$GenerateInvoiceAndPayments
     $zRatePlan->ProductRatePlanId = $ProductRatePlanId;
     $zRatePlanData = new Zuora_RatePlanData($zRatePlan);
     
-    $zRatePlanCharge = new Zuora_RatePlanCharge();
-    $zRatePlanCharge->ProductRatePlanChargeId = $ProductRatePlanChargeId;
-    $zRatePlanCharge->Quantity = 1;
-    $zRatePlanCharge->TriggerEvent = 'ServiceActivation';
+    //$zRatePlanCharge = new Zuora_RatePlanCharge();
+    //$charges=getProductRatePlanCharges($instance,$ProductRatePlanId);
+    //$zRatePlanCharge->ProductRatePlanChargeId =$charges[0]-> Id;
+    //$zRatePlanCharge->Quantity = 1;
+    //$zRatePlanCharge->TriggerEvent = 'ServiceActivation';
 
-    $zRatePlanData->addRatePlanCharge($zRatePlanCharge);
+    //$zRatePlanData->addRatePlanCharge($zRatePlanCharge);
 
     $zSubscriptionData = new Zuora_SubscriptionData($zSubscription);
     $zSubscriptionData->addRatePlanData($zRatePlanData);
     
-    $zSubscribeOptions = new Zuora_SubscribeOptions(true,true);
-    
-    if($GenerateInvoiceAndPayments===false){
-    	$zSubscribeOptions = new Zuora_SubscribeOptions(false,false);
-    }
-        
+    $zSubscribeOptions = new Zuora_SubscribeOptions($GenerateInvoice,$GeneratePayments);
+     
     $result = $instance->subscribe($zAccount, $zBillToContact, $zPaymentMethod, $zSubscriptionData,$zSubscribeOptions);
 
     return $result;
-
+	
 }
-# make subscribe w/ existing call
-function subscribeWithExistingAccount($instance, $ProductRatePlanCharge, $accountId, $subscriptionName=null){
 
-    $ProductRatePlanChargeId = $ProductRatePlanCharge->Id;
-    $ProductRatePlanId = $ProductRatePlanCharge->ProductRatePlanId;
+# make subscribe w/ existing call
+function subscribeWithExistingAccount($instance, $ProductRatePlan, $accountId,$GeneratePayments=true,$GenerateInvoice=true, $subscriptionName=null){
+    
+    $ProductRatePlanId = $ProductRatePlan->Id;
 
     # print "\nPRODUCT RATE PLAN ID: $ProductRatePlanId";
     # print "\nPRODUCT RATE PLAN CHARGE ID: $ProductRatePlanChargeId";
@@ -348,6 +434,7 @@ function subscribeWithExistingAccount($instance, $ProductRatePlanCharge, $accoun
     $zAccount = new Zuora_Account();
     $zAccount->Id = $accountId;
 
+    //$date = date('Y-m-d\TH:i:s',mktime(0, 0, 0, date("m")-1  , date("d"), date("Y")));
     $date = date('Y-m-d\TH:i:s');
     $zSubscription = new Zuora_Subscription();
     if (isset($subscriptionName)){
@@ -372,17 +459,17 @@ function subscribeWithExistingAccount($instance, $ProductRatePlanCharge, $accoun
     $zRatePlan->ProductRatePlanId = $ProductRatePlanId;
     $zRatePlanData = new Zuora_RatePlanData($zRatePlan);
     
-    $zRatePlanCharge = new Zuora_RatePlanCharge();
-    $zRatePlanCharge->ProductRatePlanChargeId = $ProductRatePlanChargeId;
-    $zRatePlanCharge->Quantity = 1;
-    $zRatePlanCharge->TriggerEvent = 'ServiceActivation';
+//    $zRatePlanCharge = new Zuora_RatePlanCharge();
+//    $zRatePlanCharge->ProductRatePlanChargeId = $ProductRatePlanChargeId;
+//    $zRatePlanCharge->Quantity = 1;
+//    $zRatePlanCharge->TriggerEvent = 'ServiceActivation';
 
-    $zRatePlanData->addRatePlanCharge($zRatePlanCharge);
+//    $zRatePlanData->addRatePlanCharge($zRatePlanCharge);
 
     $zSubscriptionData = new Zuora_SubscriptionData($zSubscription);
     $zSubscriptionData->addRatePlanData($zRatePlanData);
 
-    $zSubscribeOptions = new Zuora_SubscribeOptions(true, false);
+    $zSubscribeOptions = new Zuora_SubscribeOptions($GenerateInvoice, $GeneratePayments);
 
     $result = $instance->subscribeWithExistingAccount($zAccount, $zSubscriptionData, $zSubscribeOptions);
 
@@ -390,7 +477,7 @@ function subscribeWithExistingAccount($instance, $ProductRatePlanCharge, $accoun
 
 }
 # upload some hard code sample usage info
-function upload_usage($instance,$usages){
+function uploadUsages($instance,$usages){
 	
 	$zUsages = array();
 	
@@ -478,4 +565,136 @@ function createAndApplyPayment($instance,$accountId){
  $msg .=" -> Payment Processed:". ($success3 ?  "Success" : $result->result->errors->Code . " (" . $result->result->errors->Message.")");
 
  print "\nCreate and Apply Payment: " . $msg;
+}
+
+function getProductRatePlan($instance,$productName){
+	$result = $instance->query("select Id from Product where Name='$productName'");
+  if ($result->result->size != 1){
+  	print "No Product found with Name = '$productName'";
+		exit();
+  }		
+  $productId = $result->result->records->Id;
+  
+  $result = $instance->query("select Id,Name from ProductRatePlan where ProductId = '$productId'");
+	if ($result->result->size == 0){
+		print "No Product Rate Plan found with ProductId = '$productId'(Product Name = '$productName')";
+		exit();
+  }
+	
+	if(is_array($result->result->records)){
+		$ProductRatePlan = $result->result->records[0];
+	}else{
+		$ProductRatePlan = $result->result->records;
+	}
+	
+	return $ProductRatePlan;
+}
+
+function getProductRatePlanCharges($instance,$productRatePlanId){
+	$result = $instance->query("select Id from ProductRatePlanCharge where ProductRatePlanId='$productRatePlanId'");
+  if ($result->result->size == 0){
+  	print "No Product RatePlan Charge found with ProductRatePlanId = '$productRatePlanId'";
+		exit();
+  }		
+  
+  $ProductRatePlanCharges = array();
+  if(is_array($result->result->records)){
+  	$ProductRatePlanCharges = $result->result->records;
+  }else{
+  	$ProductRatePlanCharges[] = $result->result->records;
+  }
+  
+  return $ProductRatePlanCharges; 
+}
+function newProductAmendment($instance,$newProductName,$subscriptionId){
+	$date = date('Y-m-d\TH:i:s');
+	
+	$amendment = new Zuora_Amendment();
+	$amendment->EffectiveDate = $date;
+	$amendment->Name = 'addproduct' . time();
+	$amendment->Status = 'Draft';
+	$amendment->SubscriptionId = $subscriptionId;
+	$amendment->Type = 'NewProduct';
+	
+	$result = $instance->create(array($amendment));
+	
+	$amendmentId = $result -> result -> Id;
+	
+	$rateplan = new Zuora_RatePlan();
+	$rateplan->AmendmentId = $amendmentId;
+	$rateplan->AmendmentType = 'NewProduct';
+	
+	$ProductRatePlan = getProductRatePlan($instance,$newProductName);
+	$rateplan->ProductRatePlanId = $ProductRatePlan->Id;
+	
+	$instance->create(array($rateplan));
+	
+	$amendment = new Zuora_Amendment();
+	$amendment->Id = $amendmentId;
+	$amendment->ContractEffectiveDate = $date;
+	//$amendment->CustomerAcceptanceDate = $date;
+	//$amendment->ServiceActivationDate = $date;
+	$amendment->Status = 'Completed';
+	
+	$result = $instance->update(array($amendment));
+	return $result;
+}
+
+function removeProductAmendment($instance,$ratePlanId,$subscriptionId){
+	$date = date('Y-m-d\TH:i:s');
+	
+	$amendment = new Zuora_Amendment();
+	$amendment->EffectiveDate = $date;
+	$amendment->Name = 'removeproduct' . time();
+	$amendment->Status = 'Draft';
+	$amendment->SubscriptionId = $subscriptionId;
+	$amendment->Type = 'RemoveProduct';
+	
+	$result = $instance->create(array($amendment));
+	
+	$amendmentId = $result -> result -> Id;
+	
+	$rateplan = new Zuora_RatePlan();
+	$rateplan->AmendmentId = $amendmentId;
+	$rateplan->AmendmentType = 'RemoveProduct';
+
+	$rateplan->AmendmentSubscriptionRatePlanId  = $ratePlanId;
+	
+	$instance->create(array($rateplan));
+	
+	$amendment = new Zuora_Amendment();
+	$amendment->Id = $amendmentId;
+	$amendment->ContractEffectiveDate = $date;
+	//$amendment->CustomerAcceptanceDate = $date;
+	//$amendment->ServiceActivationDate = $date;
+	$amendment->Status = 'Completed';
+	
+	$result = $instance->update(array($amendment));
+	return $result;
+}
+
+function cancelSubscriptionAmendment($instance,$subscriptionId){
+	$date = date('Y-m-d\TH:i:s');
+	
+	$amendment = new Zuora_Amendment();
+	$amendment->EffectiveDate = $date;
+	$amendment->Name = 'cancel' . time();
+	$amendment->Status = 'Draft';
+	$amendment->SubscriptionId = $subscriptionId;
+	$amendment->Type = 'Cancellation';
+	
+	$result = $instance->create(array($amendment));
+	
+	$amendmentId = $result -> result -> Id;	
+	
+	$amendment = new Zuora_Amendment();
+	$amendment->Id = $amendmentId;
+	$amendment->ContractEffectiveDate = $date;
+	//$amendment->CustomerAcceptanceDate = $date;
+	//$amendment->ServiceActivationDate = $date;
+	$amendment->Status = 'Completed';
+	
+	$result = $instance->update(array($amendment));
+	return $result;
+
 }

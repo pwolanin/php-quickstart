@@ -35,10 +35,14 @@ The following are pre-requisites to successfully run the sample code:
     a.) with the User Role Permission to create Invoices (http://knowledgecenter.zuora.com/index.php/Z-Billing_Admin#Manage_User_Roles)
 3. A Product created with a Rate Plan & Rate Plan Component (http://knowledgecenter.zuora.com/index.php/Product_Catalog), with
     a.) The Effective Period (Start & End) of the Product/Rate Plan not expired (start < today and end > today)
-    b.) An Accounting Code specified on the Rate Plan Component 
+    b.) To keep things simple ,you'd better create a product with flat-fee of one-time charge for testing. 
 4. A Zuora Gateway set up (http://knowledgecenter.zuora.com/index.php/Z-Payments_Admin#Setup_Payment_Gateway)
     a.) Either Authorize.net, CyberSource, PayPal Payflow Pro (production or test)
     b.) The setting "Verify new credit card" disabled
+5. Modify the Default Subscription Settings
+		a.) Turn off the "Require Customer Acceptance of Orders?" 
+		b.) Turn off the "Require Service Activation of Orders?" 
+    
 
 RUNNING THE EXAMPLE
 -------------------
@@ -48,7 +52,7 @@ RUNNING THE EXAMPLE
     a.) $username as the username for your Zuora user.
     b.) $password the password for your Zuora user.
     c.) if you are testing against apisandbox, change $endpoint to https://apisandbox.zuora.com/apps/services/a/17.0
-    d.) $accountingCode as the Accounting Code specified on the Rate Plan Component
+    d.) $productName as the name of the Product
 3. From the command line, type "php main.php"
 
 INCLUDED IN THE EXAMPLE
@@ -57,13 +61,13 @@ INCLUDED IN THE EXAMPLE
 This example does the following:
 
 1. Creates an Active Account (Account w/ Status=Active and Bill To Contact/Payment Method)
-2. Creates some usage 
-3. Queries Account
-4. Deletes Account
-5. Queries Product Catalog by AccountingCode
-6. Calls subscribe() to create new Account w/ Subscription
-7. Calls subscribeWithExistingAccount() to create Subscription with the existing Account
-8. Generates Invoice
-9. Creates Payment.
+2. Creates new subscription,one-call
+3. Creates new subscription,one-call,no payments
+4. Creates new subscription on existing account
+5. Creates new subscription ,upgrade and downgrade 
+6. Cancel subscription
+7. Creates payment on invoice
+8. Add usage
+
 
 

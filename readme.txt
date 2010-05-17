@@ -68,6 +68,7 @@ This example does the following:
 6. Cancel subscription
 7. Creates payment on invoice
 8. Add usage
-
+9. Generates Invoice and Creates Payment.
+10.Query account and delete account.
 
 

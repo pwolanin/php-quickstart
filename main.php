@@ -184,6 +184,60 @@ $records = queryAll($instance, $query);
 
 print "\nAll Product count:". count($records);
 
+print "\n-------------------------------------------------------------------------------";
+print "\nUSE CASE #11:GENERATE INVOICE";
+print "\n-------------------------------------------------------------------------------";
+
+# GENERATE & QUERY & POST INVOICE
+print "\nGenerating Invoice...";
+$result = subscribe($instance, $ProductRatePlan,false,false);
+$success = $result->result->Success;
+$accountId = ($success ? $result->result->AccountId : "");
+if($accountId){	
+	$invoiceDate = date('Y-m-d\TH:i:s');
+	$targetDate = date('Y-m-d\TH:i:s', strtotime('+2 month', strtotime($invoiceDate)));
+	$result = generateInvoice($instance,$accountId,$invoiceDate,$targetDate);
+	$success = $result->result->Success;
+	$msg = ($success ? $result->result->Id : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")");
+	print "\nInvoice Created: " . $msg . "\n";
+	
+	if($success){
+	  # QUERY Invoice
+	  $query = "SELECT Id, InvoiceNumber,Status FROM Invoice WHERE id = '".$result->result->Id."'";
+	  $records = queryAll($instance, $query);
+	  print "\nInvoice Queried ($query): " . $records[0]->InvoiceNumber ." ". $records[0]->Status . "\n";
+	  
+	  # POST Invoice
+	  $result = postInvoice($instance,$result->result->Id);
+	  $success = $result->result->Success;
+	  print "\nInvoice Posted :" .($result->result->Success ? "Success" : $result->result->Errors->Code . " (" . $result->result->Errors->Message.")"); 
+  
+    if($success){
+ 		# DO PAYMENT
+    	createAndApplyPayment($instance,$accountId);
+    }    
+	}
+}
+print "\n-------------------------------------------------------------------------------";
+print "\nUSE CASE #12:QUERY ACCOUNT AND DELETE ACCOUNT";
+print "\n-------------------------------------------------------------------------------";
+# CREATE AN ACTIVE ACCOUNT
+$name = "Test" . time();
+$id = createActiveAccount($instance, $name);
+print "\nAccount Created: " . $id;
+
+# QUERY ACCOUNT
+$query = "SELECT Id, AccountNumber, Name FROM Account WHERE name = '".$name."'";
+$records = queryAll($instance, $query);
+print "\nAccount Queried ($query): " . $records[0]->AccountNumber;
+
+# DELETE ACCOUNT
+$result = $instance->delete('Account', array($id));
+$success = $result->result->success;
+$msg = ($success ? "Success" : $result->result->errors->Code . " (" . $result->result->errors->Message.")");
+print "\nAccount Deleted: " . $msg;
+
+
 # useful for debugging responses
 # Zuora_Debug::dump($result);
 

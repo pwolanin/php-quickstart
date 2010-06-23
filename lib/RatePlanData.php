@@ -13,7 +13,7 @@ class Zuora_RatePlanData extends Zuora_Object
     /**
      * @var array
      */
-    private $_ratePlanChargeObjects = array();
+    private $_ratePlanChargeDataObjects = array();
     
     public function __construct(Zuora_RatePlan  $zRatePlan = null)
     {
@@ -24,21 +24,21 @@ class Zuora_RatePlanData extends Zuora_Object
         }
     }
     
-    public function addRatePlanCharge(Zuora_RatePlanCharge $zRatePlanCharge)
+    public function addRatePlanChargeData(Zuora_RatePlanChargeData $zRatePlanChargeData)
     {
-        $this->_ratePlanChargeObjects[] = $zRatePlanCharge;
+        $this->_ratePlanChargeDataObjects[] = $zRatePlanChargeData;
     }
     
     public function getSoapVar()
     {
-        $ratePlanChargeObjects = array();
-        foreach ($this->_ratePlanChargeObjects as $object) {
-            $ratePlanChargeObjects[] = $object->getSoapVar();
+        $ratePlanChargeDataObjects = array();
+        foreach ($this->_ratePlanChargeDataObjects as $object) {
+            $ratePlanChargeDataObjects[] = $object->getSoapVar();
         }
         return new SoapVar(
             array(
                 'RatePlan'=>$this->zRatePlan->getSoapVar(),
-                'RatePlanCharge'=>$ratePlanChargeObjects,
+                'RatePlanChargeData'=>$ratePlanChargeDataObjects,
             ),
             SOAP_ENC_OBJECT,
             $this->zType,

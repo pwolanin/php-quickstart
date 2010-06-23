@@ -7,21 +7,21 @@ ini_set("display_errors", 1);
 date_default_timezone_set('America/Los_Angeles');
 
 require_once 'lib/API.php';
+require_once 'config.php';
+require_once 'functions.php';
 
 $config = new stdClass();
-$config->wsdl = 'zuora.17.0.wsdl';
-$username = '<your username>';
-$password = '<your password>';
-$endpoint = 'https://www.zuora.com/apps/services/a/17.0';
-$productName = '<your test product name>';// to keep things simple ,you'd better create a product with flat-fee of one-time charge for testing. and turn off the "Require Customer Acceptance of Orders?" ,"Require Service Activation of Orders?" in the Default Subscription Settings.
+$config->wsdl = $wsdl;
+
+$productName = '<your productName>';// to keep things simple ,you'd better create a product with flat-fee of one-time charge for testing. and turn off the "Require Customer Acceptance of Orders?" ,"Require Service Activation of Orders?" in the Default Subscription Settings.
 
 $instance = Zuora_API::getInstance($config);
-$instance->setQueryOptions(100);
+$instance->setQueryOptions($query_batch_size);
 
 # LOGIN
 $instance->setLocation($endpoint);
 $instance->login($username, $password);
-$instance->setLocation($endpoint);
+
 
 # GET PRODUCT RATEPLAN FOR SUBSCRIBE
 $ProductRatePlan  = getProductRatePlan($instance,$productName);
@@ -241,7 +241,7 @@ print "\nAccount Deleted: " . $msg;
 # useful for debugging responses
 # Zuora_Debug::dump($result);
 
-exit;
+die();
 
 # method to create an active account. requires that you have:
 #
@@ -253,51 +253,20 @@ exit;
 function createActiveAccount($instance, $name){
 
     # Create Draft Account
-    $zAccount = new Zuora_Account();
-    $zAccount->Name = $name;
-    $zAccount->AllowInvoiceEdit = 1;
-    $zAccount->AutoPay = 0;
-    $zAccount->Batch = 'Batch1';
-    $zAccount->BillCycleDay = 1;
-    $zAccount->CrmId = 'SFDC-1223471249003';
-    $zAccount->Currency = 'USD';
-    $zAccount->PaymentTerm = 'Due Upon Receipt';
-    $zAccount->PurchaseOrderNumber = 'PO-1223471249003';
-    $zAccount->Status = 'Draft';
-
+    $zAccount = makeAccount($name,'USD','Draft');
 
     $result = $instance->create(array($zAccount));
     $accountId = $result->result->Id;
 
     # Create Contact on Account
-    $zBillToContact = new Zuora_Contact();
-    $zBillToContact->AccountId = $accountId;
-    $zBillToContact->Address1 = '4901 Morena Blvd';
-    $zBillToContact->City = 'San Diego';
-    $zBillToContact->Country = 'United States';
-    $zBillToContact->FirstName = 'Robert';
-    $zBillToContact->LastName = 'Smith';
-    $zBillToContact->PostalCode = '92117';
-    $zBillToContact->State = 'Virginia';
-    $zBillToContact->WorkEmail = 'robert@smith.com';
+    $zBillToContact = makeContact('Robert','Smith','4901 Morena Blvd',null,'San Diego','Virginia','United States','92117','robert@smith.com',null,$accountId);
+    
     $result = $instance->create(array($zBillToContact));
     $contactId = $result->result->Id;
 
     # Create Payment Method on Account
-    $zPaymentMethod = new Zuora_PaymentMethod();
-    $zPaymentMethod->AccountId = $accountId;
-    $zPaymentMethod->CreditCardAddress1 = '52 Vexford Lane';
-    $zPaymentMethod->CreditCardCity = 'Anaheim';
-    $zPaymentMethod->CreditCardCountry = 'United States';
-    $zPaymentMethod->CreditCardExpirationMonth = '12';
-    $zPaymentMethod->CreditCardExpirationYear = '2012';
-    $zPaymentMethod->CreditCardHolderName = 'Firstly Lastly';
-    $zPaymentMethod->CreditCardNumber = '4111111111111111';
-    $zPaymentMethod->CreditCardPostalCode = '22042';
-    $zPaymentMethod->CreditCardState = 'California';
-    $zPaymentMethod->CreditCardType = 'Visa';
-    $zPaymentMethod->Type = 'CreditCard';
-     
+    $zPaymentMethod = makePaymentMethod('Firstly Lastly', '52 Vexford Lane',null, 'Anaheim', 'California', 'United States','22042', 'Visa', '5105105105105100', '12', '2012',$accountId);
+         
     $result = $instance->create(array($zPaymentMethod));    
     $paymentMethodId = $result->result->Id;
 
@@ -311,61 +280,6 @@ function createActiveAccount($instance, $name){
     $result = $instance->update(array($zAccount));
 
     return $accountId;
-
-}
-
-# method to query all records of a type.
-function queryAll($instance, $query){
-
-    $moreCount = 0;
-    $recordsArray = array();
-    $totalStart = time();
-
-    $start = time();
-    $result = $instance->query($query);
-    $end = time();
-    $elapsed = $end - $start;
-
-    $done = $result->result->done;
-    $size = $result->result->size;
-    $records = $result->result->records;
-
-    if ($size == 0){
-    } else if ($size == 1){
-        array_push($recordsArray, $records);
-    } else {
-
-        $locator = $result->result->queryLocator;
-        $newRecords = $result->result->records;
-        $recordsArray = array_merge($recordsArray, $newRecords);
-
-        while (!$done && $locator && $moreCount == 0){
-        
-            $start = time();
-            $result = $instance->queryMore($locator);
-            $end = time();
-            $elapsed = $end - $start;
-    
-            $done = $result->result->done;
-            $size = $result->result->size;
-            $locator = $result->result->queryLocator;
-            print "\nqueryMore";
-
-            $newRecords = $result->result->records;
-            $count = count($newRecords);
-            if ($count == 1){
-                array_push($recordsArray, $newRecords);
-            } else {
-                $recordsArray = array_merge($recordsArray, $newRecords);
-            }
-    
-        }
-    }
-
-    $totalEnd = time();
-    $totalElapsed = $totalEnd - $totalStart;
-
-    return $recordsArray;
 
 }
 
@@ -387,73 +301,16 @@ function subscribe($instance, $ProductRatePlan,$GeneratePayments=true,$GenerateI
     $ProductRatePlanId = $ProductRatePlan->Id;
 
     # SUBSCRIBE
-    $zAccount = new Zuora_Account();
-    $zAccount->AllowInvoiceEdit = 1;
-    $zAccount->AutoPay = 0;
-    $zAccount->Batch = 'Batch1';
-    $zAccount->BillCycleDay = 1;
-    $zAccount->CrmId = 'SFDC-1223471249003';
-    $zAccount->Currency = 'USD';
-    if (isset($accountName)){
-        $zAccount->Name = $accountName;
-    } else {
-        $zAccount->Name = 'Robert Smith';
-    }
-    $zAccount->PaymentTerm = 'Due Upon Receipt';
-    $zAccount->PurchaseOrderNumber = 'PO-1223471249003';
-    $zAccount->Status = 'Active';
+    $zAccount =  makeAccount((isset($accountName)? $accountName : 'Robert Smith') ,'USD','Active');
 
-    $zPaymentMethod = new Zuora_PaymentMethod();
-    $zPaymentMethod->CreditCardAddress1 = '52 Vexford Lane';
-    $zPaymentMethod->CreditCardAddress2 = '';
-    $zPaymentMethod->CreditCardCity = 'Anaheim';
-    $zPaymentMethod->CreditCardCountry = 'United States';
-    $zPaymentMethod->CreditCardExpirationMonth = '12';
-    $zPaymentMethod->CreditCardExpirationYear = '2012';
-    $zPaymentMethod->CreditCardHolderName = 'Firstly Lastly';
-    $zPaymentMethod->CreditCardNumber = '4111111111111111';
-    $zPaymentMethod->CreditCardPostalCode = '22042';
-    $zPaymentMethod->CreditCardState = 'California';
-    $zPaymentMethod->CreditCardType = 'Visa';
-    $zPaymentMethod->Type = 'CreditCard';
+    $zPaymentMethod = makePaymentMethod('Firstly Lastly', '52 Vexford Lane',null, 'Anaheim', 'California', 'United States','22042', 'Visa', '5105105105105100', '12', '2012');
 
-    $zBillToContact = new Zuora_Contact();
-    $zBillToContact->Address1 = '4901 Morena Blvd';
-    $zBillToContact->Address2 = '';
-    $zBillToContact->City = 'San Diego';
-    $zBillToContact->Country = 'United States';
-    $zBillToContact->FirstName = 'Robert';
-    $zBillToContact->LastName = 'Smith';
-    $zBillToContact->PostalCode = '92117';
-    $zBillToContact->State = 'Virginia';
-    $zBillToContact->WorkEmail = 'robert@smith.com';
+    $zBillToContact = makeContact('Robert','Smith','4901 Morena Blvd',null,'San Diego','Virginia','United States','92117','robert@smith.com',null);
 
-    $date = date('Y-m-d\TH:i:s',mktime(0, 0, 0, date("m")-1  , date("d"), date("Y")));
-    $zSubscription = new Zuora_Subscription();
-    if (isset($subscriptionName)){
-        $zSubscription->Name = $subscriptionName;
-    } else {
-        $zSubscription->Name = "Name" . time();
-    }
-    $zSubscription->AutoRenew = 1;
-    $zSubscription->ContractAcceptanceDate = $date;
-    $zSubscription->ContractEffectiveDate = $date;
-    $zSubscription->Currency = 'USD';
-    $zSubscription->InitialTerm = 1;
-    $zSubscription->RenewalTerm = 1;
-    $zSubscription->ServiceActivationDate = $date;
-    $zSubscription->Status = 'Active';
-    $zSubscription->TermStartDate=$date;
-    $zSubscription->Version=1;
+   
+    $zSubscription = makeSubscription((isset($subscriptionName)?$subscriptionName:"Name".time()),null);
 
-    $zRatePlan = new Zuora_RatePlan();
-    $zRatePlan->AmendmentType = 'NewProduct';
-
-    $zRatePlan->ProductRatePlanId = $ProductRatePlanId;
-    $zRatePlanData = new Zuora_RatePlanData($zRatePlan);
-    
-    $zSubscriptionData = new Zuora_SubscriptionData($zSubscription);
-    $zSubscriptionData->addRatePlanData($zRatePlanData);
+    $zSubscriptionData = makeSubscriptionData($zSubscription,array(),array(),$ProductRatePlanId);
     
     $zSubscribeOptions = new Zuora_SubscribeOptions($GenerateInvoice,$GeneratePayments);
      
@@ -472,33 +329,10 @@ function subscribeWithExistingAccount($instance, $ProductRatePlan, $accountId,$G
     $zAccount = new Zuora_Account();
     $zAccount->Id = $accountId;
 
-    //$date = date('Y-m-d\TH:i:s',mktime(0, 0, 0, date("m")-1  , date("d"), date("Y")));
-    $date = date('Y-m-d\TH:i:s');
-    $zSubscription = new Zuora_Subscription();
-    if (isset($subscriptionName)){
-        $zSubscription->Name = $subscriptionName;
-    } else {
-        $zSubscription->Name = "Name" . time();
-    }
-    $zSubscription->AutoRenew = 1;
-    $zSubscription->ContractAcceptanceDate = $date;
-    $zSubscription->ContractEffectiveDate = $date;
-    $zSubscription->Currency = 'USD';
-    $zSubscription->InitialTerm = 1;
-    $zSubscription->RenewalTerm = 1;
-    $zSubscription->ServiceActivationDate = $date;
-    $zSubscription->Status = 'Active';
-    $zSubscription->TermStartDate=$date;
-    $zSubscription->Version=1;
+    $zSubscription = makeSubscription((isset($subscriptionName)?$subscriptionName:"Name".time()),null);
 
-    $zRatePlan = new Zuora_RatePlan();
-    $zRatePlan->AmendmentType = 'NewProduct';
+		$zSubscriptionData = makeSubscriptionData($zSubscription,array(),array(),$ProductRatePlanId);
 
-    $zRatePlan->ProductRatePlanId = $ProductRatePlanId;
-    $zRatePlanData = new Zuora_RatePlanData($zRatePlan);
-
-    $zSubscriptionData = new Zuora_SubscriptionData($zSubscription);
-    $zSubscriptionData->addRatePlanData($zRatePlanData);
 
     $zSubscribeOptions = new Zuora_SubscribeOptions($GenerateInvoice, $GeneratePayments);
 

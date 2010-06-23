@@ -27,6 +27,8 @@ require_once 'Invoice.php';
 require_once 'SubscribeOptions.php';
 require_once 'Payment.php';
 require_once 'InvoicePayment.php';
+require_once 'RatePlanChargeData.php';
+require_once 'RatePlanChargeTier.php';
 
 class Zuora_API
 {
@@ -86,11 +88,11 @@ class Zuora_API
         try {
             $result = $this->_client->login(array('username'=>$username, 'password'=>$password));
         } catch (Exception $e) {
-            Zuora_Debug::dump($e);
-            Zuora_Debug::dump($this->_client->__getLastRequestHeaders(), 'REQUEST HEADERS');
-            Zuora_Debug::dump($this->_client->__getLastRequest(), 'REQUEST');
-            Zuora_Debug::dump($this->_client->__getLastResponseHeaders(), 'RESPONSE HEADERS');
-            Zuora_Debug::dump($this->_client->__getLastResponse(), 'RESPONSE');
+           // Zuora_Debug::dump($e->faultstring);
+           // Zuora_Debug::dump($this->_client->__getLastRequestHeaders(), 'REQUEST HEADERS');
+           // Zuora_Debug::dump($this->_client->__getLastRequest(), 'REQUEST');
+           // Zuora_Debug::dump($this->_client->__getLastResponseHeaders(), 'RESPONSE HEADERS');
+           // Zuora_Debug::dump($this->_client->__getLastResponse(), 'RESPONSE');
             return false;
         }
         $header = new SoapHeader(
@@ -175,11 +177,12 @@ class Zuora_API
             
             $success = $result->result->Success;
         } catch (Exception $e) {
-            Zuora_Debug::dump($e);
-            Zuora_Debug::dump($this->_client->__getLastRequestHeaders(), 'REQUEST HEADERS');
-            Zuora_Debug::dump($this->_client->__getLastRequest(), 'REQUEST');
-            Zuora_Debug::dump($this->_client->__getLastResponseHeaders(), 'RESPONSE HEADERS');
-            Zuora_Debug::dump($this->_client->__getLastResponse(), 'RESPONSE');
+        		Zuora_Debug::dump($e->faultstring);
+           // Zuora_Debug::dump($e);
+           // Zuora_Debug::dump($this->_client->__getLastRequestHeaders(), 'REQUEST HEADERS');
+           // Zuora_Debug::dump($this->_client->__getLastRequest(), 'REQUEST');
+           // Zuora_Debug::dump($this->_client->__getLastResponseHeaders(), 'RESPONSE HEADERS');
+           // Zuora_Debug::dump($this->_client->__getLastResponse(), 'RESPONSE');
             return false;
         }
 
@@ -358,7 +361,18 @@ class Zuora_API
         }
         return $result;
     }
-
+		public function getUserInfo(){
+        try {
+            $result = $this->_client->__soapCall("getUserInfo", array(), null, $this->_header);
+        } catch (Exception $e) {
+            Zuora_Debug::dump($e);
+            Zuora_Debug::dump($this->_client->__getLastRequestHeaders(), 'REQUEST HEADERS');
+            Zuora_Debug::dump($this->_client->__getLastRequest(), 'REQUEST');
+            Zuora_Debug::dump($this->_client->__getLastResponseHeaders(), 'RESPONSE HEADERS');
+            Zuora_Debug::dump($this->_client->__getLastResponse(), 'RESPONSE');
+        }
+        return $result;			
+		}
     public function query($zoql)
     {
 

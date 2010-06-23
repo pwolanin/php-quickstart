@@ -16,10 +16,14 @@ CONTENTS
 --------
 
 This sample zip contains:
-
+		/lib - contains all dependent api files to run the sample
+		/signup/signup.php drop-in php page that uses API to display sign-up page and process new order via subscribe() call.
+    /config.php  some configuration
+    /functions.php  some common functions
     /main.php - Sample code using the Zuora API with PHP
+    /readme.txt this file
     /zuora.17.0.wsdl - Copy of the WSDL. You can download the latest version from your own Zuora tenant in the Z-Billing Admin page.
-
+	
 DOCUMENTATION & SUPPORT
 -----------------------
 
@@ -48,12 +52,18 @@ RUNNING THE EXAMPLE
 -------------------
 
 1. Unzip the files contained in the quickstart_php.zip file to a folder on you hard drive.  
-2. In main.php, specify:
+2. In config.php, specify:
     a.) $username as the username for your Zuora user.
     b.) $password the password for your Zuora user.
     c.) if you are testing against apisandbox, change $endpoint to https://apisandbox.zuora.com/apps/services/a/17.0
-    d.) $productName as the name of the Product
-3. From the command line, type "php main.php"
+3. From the command line
+		a.) In main.php, specify $productName as the name of the Product
+		b.) type "php main.php"
+		
+4. To run the signup.php page, you need to have
+    a.) Setup a webserver (Apache +PHP)
+		b.) Deploy the php-quickstart
+    d.) Run the webserver and hit the signup.php page
 
 INCLUDED IN THE EXAMPLE
 -----------------------

@@ -8,7 +8,7 @@ class Zuora_Subscription extends Zuora_Object
         $date = date('Y-m-d\TH:i:s');
         $this->_data = array(
             'AutoRenew'=>1,
-            'ContactAcceptanceDate'=>$date,
+            'ContractAcceptanceDate'=>$date,
             'ContractEffectiveDate'=>$date,
             'Currency'=>'USD',
             'InitialTerm'=>12,

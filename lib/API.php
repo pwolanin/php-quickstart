@@ -71,6 +71,12 @@ class ZuoraFault extends Exception
     parent::__construct($message);
   }
 
+  function __toString() {
+    $message = $this->getMessage() . ' in ' . $this->getFile() . ':' . $this->getLine() . "\n";
+    $message .= $this->previous->faultstring . "\n";
+    return $message;
+  }
+
   /**
    * Match the PHP 5.3 Exception API.
    */

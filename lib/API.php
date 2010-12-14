@@ -73,7 +73,9 @@ class ZuoraFault extends Exception
 
   function __toString() {
     $message = $this->getMessage() . ' in ' . $this->getFile() . ':' . $this->getLine() . "\n";
-    $message .= $this->previous->faultstring . "\n";
+    if ($this->previous) {
+      $message .= $this->previous->faultstring . "\n";
+    }
     return $message;
   }
 

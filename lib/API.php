@@ -276,7 +276,7 @@ class Zuora_API
     public function create(array $zObjects)
     {
         if (count($zObjects) > 50) {
-            throw new Exception('ERROR: create only supports up to 50 objects');
+            throw new ZuoraFault('ERROR in ' . __METHOD__ . ': only supports up to 50 objects');
         }
         $soapVars = array();
         $type = 'Zuora_Object';
@@ -285,7 +285,7 @@ class Zuora_API
                 $type = get_class($zObject);
                 $soapVars[] = $zObject->getSoapVar();
             } else {
-                throw new Exception('ERROR: all objects must be of the same type');
+                throw new ZuoraFault('ERROR in ' . __METHOD__ . ': all objects must be of the same type');
             }
         }
         $create = array(
@@ -309,7 +309,7 @@ class Zuora_API
 		public function generate(array $zObjects)
     {
         if (count($zObjects) > 50) {
-            throw new ZuoraFault('ERROR in ' . __METHOD__ . ': generate only supports up to 50 objects'); 
+            throw new ZuoraFault('ERROR in ' . __METHOD__ . ': only supports up to 50 objects');
         }
         $soapVars = array();
         $type = 'Zuora_Object';
@@ -342,7 +342,7 @@ class Zuora_API
     public function update(array $zObjects)
     {
         if (count($zObjects) > 50) {
-            throw new Exception('ERROR: update only supports up to 50 objects'); 
+            ZuoraFault('ERROR in ' . __METHOD__ . ': only supports up to 50 objects');
         }
         $soapVars = array();
         $type = 'Zuora_Object';
@@ -351,7 +351,7 @@ class Zuora_API
                 $type = get_class($zObject);
                 $soapVars[] = $zObject->getSoapVar();
             } else {
-                throw new Exception('ERROR: all objects must be of the same type');
+                throw new ZuoraFault('ERROR in ' . __METHOD__ . ': all objects must be of the same type');
             }
         }
         $update= array(

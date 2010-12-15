@@ -1,7 +1,7 @@
 <?php
-class Zuora_ProductRatePlanChange extends Zuora_Object
+class Zuora_ProductRatePlanCharge extends Zuora_Object
 {
-    protected $zType = 'ProductRatePlanChange';
+    protected $zType = 'ProductRatePlanCharge';
 
     public function __construct()
     {

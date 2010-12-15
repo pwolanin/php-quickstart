@@ -43,6 +43,7 @@ require_once 'PaymentMethod.php';
 require_once 'Product.php';
 require_once 'ProductRatePlan.php';
 require_once 'ProductRatePlanCharge.php';
+require_once 'ProductRatePlanChargeTier.php';
 require_once 'RatePlan.php';
 require_once 'RatePlanCharge.php';
 require_once 'RatePlanData.php';
@@ -115,6 +116,58 @@ class Zuora_API
     protected $_header;
 
     protected $_endpoint = null;
+
+    protected static $_classmap = array(
+        'zObject' => 'Zuora_zObject',
+        'Account' => 'Zuora_Account',
+        'InvoiceAdjustment' => 'Zuora_InvoiceAdjustment',
+        'InvoiceItemAdjustment' => 'Zuora_InvoiceItemAdjustment',
+        'Amendment' => 'Zuora_Amendment',
+        'Contact' => 'Zuora_Contact',
+        'Invoice' => 'Zuora_Invoice',
+        'Refund' => 'Zuora_Refund',
+        'RefundInvoicePayment' => 'Zuora_RefundInvoicePayment',
+        'InvoiceItem' => 'Zuora_InvoiceItem',
+        'InvoicePayment' => 'Zuora_InvoicePayment',
+        'Payment' => 'Zuora_Payment',
+        'PaymentMethod' => 'Zuora_PaymentMethod',
+        'Product' => 'Zuora_Product',
+        'ProductRatePlan' => 'Zuora_ProductRatePlan',
+        'ProductRatePlanCharge' => 'Zuora_ProductRatePlanCharge',
+        'ProductRatePlanChargeTier' => 'Zuora_ProductRatePlanChargeTier',
+        'RatePlan' => 'Zuora_RatePlan',
+        'RatePlanCharge' => 'Zuora_RatePlanCharge',
+        'RatePlanChargeTier' => 'Zuora_RatePlanChargeTier',
+        'Subscription' => 'Zuora_Subscription',
+        'Usage' => 'Zuora_Usage',
+        'Export' => 'Zuora_Export',
+        'ID' => 'Zuora_ID',
+        //'LoginResult' => 'Zuora_LoginResult',
+        'SubscribeRequest' => 'Zuora_SubscribeRequest',
+        'SubscribeOptions' => 'Zuora_SubscribeOptions',
+        'SubscriptionData' => 'Zuora_SubscriptionData',
+        'RatePlanData' => 'Zuora_RatePlanData',
+        'RatePlanChargeData' => 'Zuora_RatePlanChargeData',
+        'ProductRatePlanChargeTierData' => 'Zuora_ProductRatePlanChargeTierData',
+        'InvoiceData' => 'Zuora_InvoiceData',
+        'PreviewOptions' => 'Zuora_PreviewOptions',
+        'SubscribeResult' => 'Zuora_SubscribeResult',
+        'SaveResult' => 'Zuora_SaveResult',
+        'DeleteResult' => 'Zuora_DeleteResult',
+        'QueryLocator' => 'Zuora_QueryLocator',
+        //'QueryResult' => 'Zuora_QueryResult',
+        'Error' => 'Zuora_Error',
+        'ErrorCode' => 'Zuora_ErrorCode',
+        'SessionHeader' => 'Zuora_SessionHeader',
+        'DummyHeader' => 'Zuora_DummyHeader',
+        'ApiFault' => 'Zuora_ApiFault',
+        'LoginFault' => 'Zuora_LoginFault',
+        'InvalidTypeFault' => 'Zuora_InvalidTypeFault',
+        'InvalidValueFault' => 'Zuora_InvalidValueFault',
+        'MalformedQueryFault' => 'Zuora_MalformedQueryFault',
+        'InvalidQueryLocatorFault' => 'Zuora_InvalidQueryLocatorFault',
+        'UnexpectedErrorFault' => 'Zuora_UnexpectedErrorFault',
+       );
     
 	/**
      * Constructor
@@ -132,6 +185,7 @@ class Zuora_API
             array(
                 'soap_version'=>SOAP_1_1,
                 'trace'=>1,
+                'classmap' => self::$_classmap,
             )
         );
     }

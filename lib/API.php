@@ -57,6 +57,8 @@ require_once 'Payment.php';
 require_once 'InvoicePayment.php';
 require_once 'RatePlanChargeData.php';
 require_once 'RatePlanChargeTier.php';
+require_once 'SubscribeResult.php';
+require_once 'Error.php';
 
 class ZuoraFault extends Exception
 {
@@ -118,7 +120,7 @@ class Zuora_API
     protected $_endpoint = null;
 
     protected static $_classmap = array(
-        'zObject' => 'Zuora_zObject',
+        'zObject' => 'Zuora_Object',
         'Account' => 'Zuora_Account',
         'InvoiceAdjustment' => 'Zuora_InvoiceAdjustment',
         'InvoiceItemAdjustment' => 'Zuora_InvoiceItemAdjustment',
@@ -152,7 +154,7 @@ class Zuora_API
         'InvoiceData' => 'Zuora_InvoiceData',
         'PreviewOptions' => 'Zuora_PreviewOptions',
         'SubscribeResult' => 'Zuora_SubscribeResult',
-        'SaveResult' => 'Zuora_SaveResult',
+        //'SaveResult' => 'Zuora_SaveResult',
         'DeleteResult' => 'Zuora_DeleteResult',
         'QueryLocator' => 'Zuora_QueryLocator',
         //'QueryResult' => 'Zuora_QueryResult',
@@ -267,9 +269,9 @@ class Zuora_API
      */
     public function subscribe(
         Zuora_Account $zAccount,
-        Zuora_Contact $zBillToContact,
-        Zuora_PaymentMethod $zPaymentMethod,
-        Zuora_SubscriptionData $zSubscriptionData,        
+        Zuora_SubscriptionData $zSubscriptionData,
+        Zuora_Contact $zBillToContact=null,
+        Zuora_PaymentMethod $zPaymentMethod=null,
         Zuora_SubscribeOptions $zSubscribeOptions=null,
         Zuora_Contact $zSoldToContact=null
     )
@@ -278,17 +280,16 @@ class Zuora_API
         
         $subscribeRequest = array(
             'Account'=>$zAccount->getSoapVar(),
-            'BillToContact'=>$zBillToContact->getSoapVar(),
-            'PaymentMethod'=>$zPaymentMethod->getSoapVar(),
             'SubscriptionData'=>$zSubscriptionData->getSoapVar(),
         );
-        
-        if (isset($zSoldToContact)) {
-            $subscribeRequest['SoldToContact'] = $zSoldToContact->getSoapVar();
+
+        // Optional variables
+        foreach (array('BillToContact', 'PaymentMethod', 'SoldToContact', 'SubscribeOptions') as $var) {
+            $localVarName = "z{$var}";
+            if (isset($$localVarName)) {
+                $subscribeRequest[$var] = $$localVarName->getSoapVar();
+            }
         }
-        if (isset($zSubscribeOptions)) {
-            $subscribeRequest['SubscribeOptions'] = $zSubscribeOptions->getSoapVar();
-        }    
 
         try {
             $result = $this->_client->__soapCall("subscribe", array('zObjects'=>array($subscribeRequest)), null, $this->_header);   

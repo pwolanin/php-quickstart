@@ -83,9 +83,9 @@ class ZuoraFault extends Exception
   }
 
   /**
-   * Match the PHP 5.3 Exception API.
+   * Similar to the PHP 5.3 Exception API.
    */
-  function getPrevious() {
+  function getPreviousException() {
     return $this->previous;
   }
 }

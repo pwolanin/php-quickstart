@@ -22,7 +22,11 @@ abstract class Zuora_Object
     {
         return $this->_data[$name];
     }
-    
+
+    public function __isset($name) {
+        return isset($this->_data[$name]);
+    }
+
     public function getSoapVar()
     {
         return new SoapVar(

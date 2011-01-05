@@ -339,7 +339,7 @@ function subscribe($instance, $ProductRatePlan,$GeneratePayments=true,$GenerateI
     
     $zSubscribeOptions = new Zuora_SubscribeOptions($GenerateInvoice,$GeneratePayments);
      
-    $result = $instance->subscribe($zAccount, $zBillToContact, $zPaymentMethod, $zSubscriptionData,$zSubscribeOptions);
+    $result = $instance->subscribe($zAccount, $zSubscriptionData,$zBillToContact, $zPaymentMethod, $zSubscribeOptions);
 
     return $result;
 	

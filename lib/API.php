@@ -155,7 +155,7 @@ class Zuora_API
         'PreviewOptions' => 'Zuora_PreviewOptions',
         'SubscribeResult' => 'Zuora_SubscribeResult',
         //'SaveResult' => 'Zuora_SaveResult',
-        'DeleteResult' => 'Zuora_DeleteResult',
+        //'DeleteResult' => 'Zuora_DeleteResult',
         'QueryLocator' => 'Zuora_QueryLocator',
         //'QueryResult' => 'Zuora_QueryResult',
         'Error' => 'Zuora_Error',

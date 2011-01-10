@@ -155,7 +155,7 @@ class Zuora_API
         'PreviewOptions' => 'Zuora_PreviewOptions',
         'SubscribeResult' => 'Zuora_SubscribeResult',
         //'SaveResult' => 'Zuora_SaveResult',
-        'DeleteResult' => 'Zuora_DeleteResult',
+        //'DeleteResult' => 'Zuora_DeleteResult',
         'QueryLocator' => 'Zuora_QueryLocator',
         //'QueryResult' => 'Zuora_QueryResult',
         'Error' => 'Zuora_Error',
@@ -258,6 +258,14 @@ class Zuora_API
     public function setLocation($endpoint){
         $this->_endpoint = $endpoint;
         $this->_client->__setLocation($this->_endpoint);
+    }
+
+    public function getTypes() {
+      return $this->_client->__getTypes();
+    }
+
+    public function getFunctions() {
+      return $this->_client->__getFunctions();
     }
 
     /**

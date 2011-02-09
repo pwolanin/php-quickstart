@@ -36,4 +36,9 @@ abstract class Zuora_Object
             self::TYPE_NAMESPACE
         );
     }
+
+    public function getData()
+    {
+        return $this->_data;
+    }
 }

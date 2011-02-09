@@ -187,7 +187,7 @@ class Zuora_API
             array(
                 'soap_version'=>SOAP_1_1,
                 'trace'=>1,
-                'classmap' => self::$_classmap,
+                //'classmap' => self::$_classmap,
             )
         );
     }
@@ -521,6 +521,9 @@ class Zuora_API
 
         try {
             $result = $this->_client->__soapCall("query", $queryWrapper, null, $this->_header);
+            $type = $this->extractType($zoql);
+            $this->buildFromClassMap($type, $result);
+            return $result;
         } catch (SoapFault $e) {
           throw new ZuoraFault('ERROR in ' . __METHOD__, $e, $this->_client->__getLastRequestHeaders(), $this->_client->__getLastRequest(), $this->_client->__getLastResponseHeaders(), $this->_client->__getLastResponse());
         }
@@ -572,5 +575,42 @@ class Zuora_API
             self::$_instance = new self($config);
         }
         return self::$_instance;
+    }
+
+    public function buildFromClassMap($type, &$result)
+    {
+        if (isset(self::$_classmap[$type])) {
+            $class = self::$_classmap[$type];
+        } else {
+            return;
+        }
+        if ($result->result->size == 0) {
+            return;
+        }
+        if ($result->result->size > 1) {
+            foreach ($result->result->records as $key => $record) {
+                $result->result->records[$key] = new $class;
+                $this->fillVariables($result->result->records[$key], $record);
+            }
+        }
+        else {
+            $vars = clone($result->result->records);
+            $result->result->records = new $class;
+            $this->fillVariables($result->result->records, $vars);
+        }
+    }
+
+    public function fillVariables(&$obj, $vars) {
+        foreach ($vars as $key => $value) {
+          $obj->$key = $value;
+        }
+    }
+    
+    public function extractType($zoql)
+    {
+        if (preg_match('/from ([^\s]+)/i', $zoql, $reg)) {
+            return $reg[1];
+        }
+        return false;
     }
 }

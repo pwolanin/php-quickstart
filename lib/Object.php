@@ -27,6 +27,10 @@ abstract class Zuora_Object
         return isset($this->_data[$name]);
     }
 
+    public function __unset($name) {
+        unset($this->_data[$name]);
+    }
+
     public function getSoapVar()
     {
         return new SoapVar(

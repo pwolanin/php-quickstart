@@ -51,6 +51,7 @@ require_once 'SubscribeRequest.php';
 require_once 'Subscription.php';
 require_once 'SubscriptionData.php';
 require_once 'Usage.php';
+// Includes Invoice, InvoiceAdjustment, InvoiceItem, and InvoiceItemAdjustment classes.
 require_once 'Invoice.php';
 require_once 'SubscribeOptions.php';
 require_once 'Payment.php';

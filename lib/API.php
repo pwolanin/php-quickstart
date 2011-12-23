@@ -237,7 +237,7 @@ class Zuora_API
         $header = new SoapHeader(
         	'http://api.zuora.com/',
         	'QueryOptions',
-            array(
+            (object) array(
             	'batchSize'=>$batchSize
             )
         );
